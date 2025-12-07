@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RAG Chatbot</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
+    #messages { border: 1px solid #ccc; padding: 1rem; height: 400px; overflow-y: auto; }
+    .msg { margin-bottom: 0.75rem; }
+    .user { font-weight: bold; color: #0055aa; }
+    .bot { font-weight: bold; color: #008800; }
+    .bubble { margin-left: 0.5rem; display: inline-block; max-width: 100%; }
+    .bubble.markdown { text-align: left; }
+    #form { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    #question { flex: 1; padding: 0.5rem; }
+    button { padding: 0.5rem 1rem; }
+
+    /* basic markdown styling inside bubbles */
+    .bubble h1, .bubble h2, .bubble h3 { margin: 0.4rem 0; font-size: 1rem; }
+    .bubble p { margin: 0.25rem 0; }
+    .bubble ul { margin: 0.25rem 0 0.25rem 1.25rem; }
+    .bubble code {
+      background: #f5f5f5;
+      padding: 0 0.2rem;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+    .bubble pre {
+      background: #263238;
+      color: #eceff1;
+      padding: 0.5rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+  <!-- tiny markdown parser from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <h1>RAG Chatbot</h1>
+  <div id="messages"></div>
+
+  <form id="form">
+    <input id="question" type="text" placeholder="Ask something..." autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000/stream"; // streaming endpoint
+    const messagesEl = document.getElementById("messages");
+    const form = document.getElementById("form");
+    const input = document.getElementById("question");
+
+    function appendMessage(role, htmlOrText, isMarkdown = false) {
+      const div = document.createElement("div");
+      div.className = "msg";
+
+      const label = document.createElement("span");
+      label.className = role === "user" ? "user" : "bot";
+      label.textContent = role === "user" ? "You:" : "Bot:";
+
+      const bubble = document.createElement("span");
+      bubble.className = "bubble" + (isMarkdown ? " markdown" : "");
+
+      if (isMarkdown) {
+        // marked.parse turns markdown into HTML
+        bubble.innerHTML = window.marked.parse(htmlOrText);
+      } else {
+        bubble.textContent = htmlOrText;
+      }
+
+      div.appendChild(label);
+      div.appendChild(bubble);
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+
+      appendMessage("user", question);
+      input.value = "";
+
+      // add empty bot message that will be filled as text arrives
+      appendMessage("bot", "Thinking...");
+      const botBubble = messagesEl.lastChild.querySelector(".bubble");
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        if (!res.ok || !res.body) {
+          throw new Error("Request failed: " + res.status);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let fullText = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          if (!chunk) continue;
+          fullText += chunk;
+          // re-render markdown progressively
+          botBubble.innerHTML = window.marked.parse(fullText);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+      } catch (err) {
+        botBubble.textContent = "Error: " + (err?.message || err);
+      }
+    });
+  </script>
+</body>
+</html>

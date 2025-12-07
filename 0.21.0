@@ -1,0 +1,6 @@
+Collecting dotenv
+  Downloading dotenv-0.9.9-py2.py3-none-any.whl (1.9 kB)
+Collecting python-dotenv
+  Using cached python_dotenv-1.2.1-py3-none-any.whl (21 kB)
+Installing collected packages: python-dotenv, dotenv
+Successfully installed dotenv-0.9.9 python-dotenv-1.2.1

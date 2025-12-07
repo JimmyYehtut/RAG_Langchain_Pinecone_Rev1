@@ -1,0 +1,315 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0b1120;
+  --bg-elevated: #020617;
+  --bg-input: #020617;
+  --border-subtle: #1f2937;
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --user-bg: #0f172a;
+  --assistant-bg: #020617;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #1d2433 0, #020617 55%, #000 100%);
+  color: var(--text-primary);
+}
+
+/* Root container */
+#root {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* App wrapper */
+.app {
+  margin: 0 auto;
+}
+
+/* Title */
+h1 {
+  text-align: center;
+  margin: 0 0 1.5rem 0;
+  font-size: clamp(1.4rem, 2vw + 1rem, 1.75rem);
+  letter-spacing: 0.03em;
+  color: var(--text-primary);
+}
+
+/* Main panel */
+.single-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.panel {
+  width: 100%;
+  max-width: 860px;
+  height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  padding: 1rem 1.1rem 1.1rem;
+  background: radial-gradient(circle at top left, #111827 0, #020617 55%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow:
+    0 18px 60px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(15, 23, 42, 0.6);
+}
+
+/* Chat window */
+.chat-window {
+  flex: 1;
+  padding: 0.5rem 0.25rem 0.75rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
+}
+
+/* Scrollbar for WebKit */
+.chat-window::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-window::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-window::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 999px;
+}
+
+/* Messages */
+.msg {
+  margin-bottom: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.msg.user {
+  align-items: flex-end;
+}
+
+.msg.assistant {
+  align-items: flex-start;
+}
+
+.label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+/* Bubbles */
+.bubble {
+  max-width: 80%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  border: 1px solid transparent;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.msg.user .bubble {
+  background: var(--user-bg);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: var(--text-primary);
+  border-top-right-radius: 4px;
+}
+
+.msg.assistant .bubble {
+  background: var(--assistant-bg);
+  color: var(--text-primary);
+  border-color: rgba(55, 65, 81, 0.7);
+  border-top-left-radius: 4px;
+  box-shadow:
+    0 12px 35px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(15, 23, 42, 0.8);
+}
+
+/* Markdown styling inside bubbles */
+.bubble h1,
+.bubble h2,
+.bubble h3 {
+  margin: 0.25rem 0 0.15rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.bubble p {
+  margin: 0.15rem 0;
+}
+
+.bubble ul {
+  margin: 0.15rem 0 0.15rem 1.1rem;
+  padding-left: 0.4rem;
+}
+
+.bubble li {
+  margin: 0.05rem 0;
+}
+
+.bubble code {
+  background: rgba(15, 23, 42, 0.95);
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+  font-family: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.8rem;
+}
+
+.bubble pre {
+  background: #020617;
+  color: #e5e7eb;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(55, 65, 81, 0.8);
+  overflow-x: auto;
+  font-size: 0.8rem;
+}
+
+/* Input row */
+.input-row {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.input-row input {
+  flex: 1;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.input-row input::placeholder {
+  color: #6b7280;
+}
+
+.input-row input:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 0 4px rgba(37, 99, 235, 0.18);
+}
+
+/* Button */
+.input-row button {
+  padding: 0.65rem 1.3rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: white;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  box-shadow:
+    0 12px 30px rgba(37, 99, 235, 0.45),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+  transition: transform 0.1s ease, box-shadow 0.1s ease,
+    filter 0.1s ease, background-position 0.15s ease;
+  background-size: 150% 150%;
+}
+
+.input-row button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 18px 40px rgba(37, 99, 235, 0.55),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+  filter: brightness(1.03);
+  background-position: 100% 0;
+}
+
+.input-row button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 10px 22px rgba(37, 99, 235, 0.4),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+.input-row button:disabled {
+  opacity: 0.65;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.7),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
+  cursor: default;
+}
+
+/* Hide old vite demo styles if any */
+.logo,
+.card,
+.read-the-docs {
+  display: none !important;
+}
+
+/* Responsive: mobile / small tablets */
+@media (max-width: 768px) {
+  #root {
+    padding: 1rem 0.6rem;
+  }
+
+  .panel {
+    height: 88vh;
+    padding: 0.75rem 0.75rem 0.85rem;
+    border-radius: 14px;
+  }
+
+  .chat-window {
+    padding-inline: 0.1rem;
+  }
+
+  .bubble {
+    max-width: 92%;
+    font-size: 0.9rem;
+  }
+
+  .input-row {
+    gap: 0.4rem;
+  }
+
+  .input-row input {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .input-row button {
+    padding-inline: 1rem;
+    font-size: 0.85rem;
+  }
+}
