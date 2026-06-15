@@ -271,6 +271,91 @@ h1 {
   cursor: default;
 }
 
+/* Login */
+.login-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 360px;
+  padding: 2rem;
+  background: radial-gradient(circle at top left, #111827 0, #020617 55%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+}
+
+.login-form input {
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.login-form input:focus {
+  border-color: var(--accent);
+}
+
+.login-form button {
+  padding: 0.65rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.login-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Chat header */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.chat-header h1 {
+  margin: 0;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.empty-hint {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 2rem;
+}
+
 /* Hide old vite demo styles if any */
 .logo,
 .card,

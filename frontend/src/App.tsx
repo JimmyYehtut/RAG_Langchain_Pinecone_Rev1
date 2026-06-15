@@ -3,82 +3,118 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./App.css";
 
+const API = "http://127.0.0.1:8000";
+
 type Role = "user" | "assistant";
+interface Message { role: Role; content: string; }
 
-interface Message {
-  role: Role;
-  content: string;
-}
-
-const STREAM_URL = "http://127.0.0.1:8000/stream";
-
-async function streamAnswer(
-  question: string,
-  onChunk: (chunk: string) => void
-) {
-  const res = await fetch(STREAM_URL, {
+async function login(email: string, password: string): Promise<string> {
+  const res = await fetch(`${API}/auth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ email, password }),
   });
-
-  if (!res.ok || !res.body) {
-    throw new Error(`Stream request failed: ${res.status}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    if (chunk) onChunk(chunk);
-  }
+  if (!res.ok) throw new Error("Invalid credentials");
+  const data = await res.json();
+  return data.access_token as string;
 }
 
-function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+async function sendChat(token: string, message: string): Promise<string> {
+  const res = await fetch(`${API}/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? `Request failed: ${res.status}`);
+  }
+  const data = await res.json();
+  return data.answer as string;
+}
 
-  const sendMessage = async (e: FormEvent) => {
+function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const question = input.trim();
-    if (!question || loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      const token = await login(email, password);
+      onLogin(token);
+    } catch {
+      setError("Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const userMsg: Message = { role: "user", content: question };
-    const assistantMsg: Message = { role: "assistant", content: "" };
+  return (
+    <div className="login-wrap">
+      <h1>RAG Chatbot</h1>
+      <form className="login-form" onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
+        {error && <p className="login-error">{error}</p>}
+        <button type="submit" disabled={loading}>
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+    </div>
+  );
+}
 
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+function Chat({ token, onLogout }: { token: string; onLogout: () => void }) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async (e: FormEvent) => {
+    e.preventDefault();
+    const message = input.trim();
+    if (!message || loading) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: message },
+      { role: "assistant", content: "…" },
+    ]);
     setInput("");
     setLoading(true);
 
-    // index of the new assistant message in the updated array
-    const assistantIndex = messages.length + 1;
-
     try {
-      await streamAnswer(question, (chunk) => {
-        setMessages((prev) => {
-          const updated = [...prev];
-          const current = updated[assistantIndex];
-          if (!current) return prev;
-          updated[assistantIndex] = {
-            ...current,
-            content: current.content + chunk,
-          };
-          return updated;
-        });
-      });
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Unknown error occurred";
+      const answer = await sendChat(token, message);
       setMessages((prev) => {
         const updated = [...prev];
-        updated[assistantIndex] = {
-          role: "assistant",
-          content: `Error: ${message}`,
-        };
+        updated[updated.length - 1] = { role: "assistant", content: answer };
+        return updated;
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: `Error: ${msg}` };
         return updated;
       });
     } finally {
@@ -88,10 +124,16 @@ function App() {
 
   return (
     <div className="app">
-      <h1>RAG Chatbot</h1>
+      <div className="chat-header">
+        <h1>RAG Chatbot</h1>
+        <button className="logout-btn" onClick={onLogout}>Sign out</button>
+      </div>
       <div className="single-layout">
         <div className="panel">
           <div className="chat-window">
+            {messages.length === 0 && (
+              <p className="empty-hint">Ask a question about your documents.</p>
+            )}
             {messages.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
                 <div className="label">{m.role === "user" ? "You" : "Bot"}</div>
@@ -103,15 +145,16 @@ function App() {
               </div>
             ))}
           </div>
-          <form className="input-row" onSubmit={sendMessage}>
+          <form className="input-row" onSubmit={handleSend}>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask something..."
+              placeholder="Ask something…"
               autoComplete="off"
+              disabled={loading}
             />
             <button type="submit" disabled={loading}>
-              {loading ? "Streaming..." : "Send"}
+              {loading ? "Thinking…" : "Send"}
             </button>
           </form>
         </div>
@@ -120,4 +163,22 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  const [token, setToken] = useState<string | null>(
+    () => sessionStorage.getItem("token")
+  );
+
+  const handleLogin = (t: string) => {
+    sessionStorage.setItem("token", t);
+    setToken(t);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    setToken(null);
+  };
+
+  return token
+    ? <Chat token={token} onLogout={handleLogout} />
+    : <LoginForm onLogin={handleLogin} />;
+}

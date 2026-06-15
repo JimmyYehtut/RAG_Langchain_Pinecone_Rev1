@@ -2,7 +2,16 @@ import os
 import time
 import uuid
 import json
+from contextlib import asynccontextmanager
 from typing import AsyncIterator
+
+# Use the Windows native certificate store for all outbound TLS connections.
+# Required on Windows where the Python bundled CA bundle doesn't include corporate/OS certs.
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,8 +19,21 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.ask import ask_question, stream_answer
+from app.database import create_tables
+from app import auth as auth_module
+from app.routers import chat, admin, documents, history
 
-app = FastAPI(title="RAG OpenAI-Compatible API")
+MODEL_ID = os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1")
+RAG_MODEL_ID = "ai-knowledge"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_tables()
+    yield
+
+
+app = FastAPI(title="Enterprise Knowledge Platform", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,9 +43,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_ID = os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1")
-RAG_MODEL_ID = "rag-pinecone"
+# ── Enterprise routes ──────────────────────────────────────────────────────────
+app.include_router(auth_module.router)
+app.include_router(chat.router)
+app.include_router(admin.router)
+app.include_router(documents.router)
+app.include_router(history.router)
 
+
+# ── Open WebUI-compatible endpoints (kept for backward compatibility) ──────────
 
 class Message(BaseModel):
     role: str
@@ -59,7 +87,6 @@ def _make_chunk(content: str, completion_id: str, finish_reason: str | None = No
 
 async def _stream_sse(query: str) -> AsyncIterator[str]:
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
-    # Send role delta first
     yield _make_chunk("", completion_id)
     async for chunk in stream_answer(query):
         if chunk:

@@ -20,12 +20,19 @@ def build_retrieval_chain():
 
     # Create a prompt template
     prompt = ChatPromptTemplate.from_template(
-        "Answer the question based only on the following context:\n\n{context}\n\nQuestion: {question}"
+        "Answer the question based only on the following context. "
+        "At the end of your answer, list the document titles you used as sources under a 'Sources:' heading.\n\n"
+        "{context}\n\n"
+        "Question: {question}"
     )
 
     # Build RAG chain using LCEL (LangChain Expression Language)
     def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+        parts = []
+        for doc in docs:
+            title = doc.metadata.get("title") or doc.metadata.get("source", "Unknown")
+            parts.append(f"[Title: {title}]\n{doc.page_content}")
+        return "\n\n".join(parts)
 
     rag_chain = (
         {
